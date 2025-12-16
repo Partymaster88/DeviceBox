@@ -91,8 +91,9 @@ Für Auto-Deploy muss ein GitHub Webhook konfiguriert werden:
 ### Zugriff auf die Web-UI
 
 Nach der Installation ist DeviceBox erreichbar unter:
-- `http://devicebox.local:3000` (im lokalen Netzwerk)
-- `http://DEINE-IP:3000` (direkte IP-Adresse)
+- `http://devicebox.local` (im lokalen Netzwerk, ohne Port)
+- `http://DEINE-IP` (direkte IP-Adresse, ohne Port)
+- `http://devicebox.local:3000` (direkter Zugriff auf Next.js, falls nginx nicht läuft)
 
 ### WiFi Access Point
 

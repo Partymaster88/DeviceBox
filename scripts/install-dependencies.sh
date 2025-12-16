@@ -43,6 +43,10 @@ sudo apt-get install -y nftables
 echo "Installiere USB-Tools..."
 sudo apt-get install -y uhubctl evtest usbutils
 
+# Installiere nginx für Reverse Proxy (Port 80)
+echo "Installiere nginx..."
+sudo apt-get install -y nginx
+
 echo "System-Dependencies Installation abgeschlossen"
 echo "Node.js Version: $(node --version)"
 echo "npm Version: $(npm --version)"

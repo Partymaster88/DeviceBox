@@ -44,5 +44,6 @@ else
 fi
 
 echo "DeviceBox gestartet"
-echo "Erreichbar unter: http://devicebox.local:3000 oder http://$(hostname -I | awk '{print $1}'):3000"
+echo "Erreichbar unter: http://devicebox.local (ohne Port)"
+echo "Admin-Interface: http://devicebox.local/admin"
 
