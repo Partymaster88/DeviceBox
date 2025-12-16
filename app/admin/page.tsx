@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 
 interface Device {
   id: string
@@ -14,6 +14,7 @@ interface Device {
 export default function AdminPage() {
   const [devices, setDevices] = useState<Device[]>([])
   const [loading, setLoading] = useState(true)
+  const [toggling, setToggling] = useState<string | null>(null)
 
   useEffect(() => {
     loadDevices()
@@ -21,7 +22,60 @@ export default function AdminPage() {
     return () => clearInterval(interval)
   }, [])
 
-  const loadDevices = async () => {
+  // Barcode-Erfassung: Fange Tastatur-Events ab wenn Scanner aktiviert ist
+  useEffect(() => {
+    let barcodeBuffer = ''
+    let barcodeTimeout: NodeJS.Timeout | null = null
+
+    const handleKeyPress = async (e: KeyboardEvent) => {
+      // Prüfe ob ein Scanner aktiviert ist
+      const activeScanner = devices.find(d => d.enabled && d.connected)
+      if (!activeScanner) return
+
+      // Enter-Taste = Ende des Barcodes
+      if (e.key === 'Enter') {
+        if (barcodeBuffer.length > 0) {
+          console.log('Barcode erkannt:', barcodeBuffer)
+          
+          // Sende Barcode an API
+          try {
+            await fetch('/api/scanner/scan', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ barcode: barcodeBuffer })
+            })
+            // Lade Geräte neu um letzten Scan anzuzeigen
+            setTimeout(() => loadDevices(), 500)
+          } catch (error) {
+            console.error('Fehler beim Senden des Barcodes:', error)
+          }
+          
+          barcodeBuffer = ''
+        }
+        e.preventDefault()
+        return
+      }
+
+      // Normale Zeichen zum Buffer hinzufügen
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        barcodeBuffer += e.key
+        
+        // Reset Timeout
+        if (barcodeTimeout) clearTimeout(barcodeTimeout)
+        barcodeTimeout = setTimeout(() => {
+          barcodeBuffer = ''
+        }, 1000) // Reset nach 1 Sekunde Inaktivität
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyPress)
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress)
+      if (barcodeTimeout) clearTimeout(barcodeTimeout)
+    }
+  }, [devices, loadDevices])
+
+  const loadDevices = useCallback(async () => {
     try {
       const res = await fetch('/api/devices')
       const data = await res.json()
@@ -31,23 +85,33 @@ export default function AdminPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const toggleDevice = async (deviceId: string, enabled: boolean) => {
+  const toggleDevice = async (deviceId: string, currentEnabled: boolean) => {
+    if (toggling === deviceId) return // Verhindere mehrfache Klicks
+    
+    setToggling(deviceId)
+    const newEnabled = !currentEnabled
+    
     try {
-      console.log(`Toggle Device: ${deviceId}, enabled: ${enabled}`);
+      console.log(`Toggle Device: ${deviceId}, von ${currentEnabled} zu ${newEnabled}`);
       
       const res = await fetch(`/api/devices/${deviceId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled })
+        body: JSON.stringify({ enabled: newEnabled })
       })
       
       const data = await res.json();
       console.log('API Response:', data);
       
       if (res.ok) {
-        loadDevices()
+        // Sofort UI aktualisieren
+        setDevices(prev => prev.map(d => 
+          d.id === deviceId ? { ...d, enabled: newEnabled } : d
+        ))
+        // Dann neu laden
+        setTimeout(() => loadDevices(), 500)
       } else {
         console.error('API Fehler:', data);
         alert(`Fehler: ${data.error || 'Unbekannter Fehler'}`);
@@ -55,92 +119,104 @@ export default function AdminPage() {
     } catch (error) {
       console.error('Fehler beim Umschalten des Geräts:', error)
       alert(`Fehler beim Umschalten: ${error instanceof Error ? error.message : String(error)}`)
+    } finally {
+      setToggling(null)
     }
   }
 
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#ffffff',
-      color: '#000000',
-      padding: 0,
-      margin: 0,
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      padding: '2rem',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
     }}>
       <div style={{
         maxWidth: '1400px',
-        margin: '0 auto',
-        padding: '3rem 2rem'
+        margin: '0 auto'
       }}>
         {/* Header */}
         <header style={{
-          marginBottom: '4rem',
-          paddingBottom: '2rem',
-          borderBottom: '2px solid #000000'
+          background: '#ffffff',
+          borderRadius: '12px',
+          padding: '2rem',
+          marginBottom: '2rem',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
         }}>
-          <h1 style={{
-            fontSize: '2.5rem',
-            fontWeight: '700',
-            margin: 0,
-            letterSpacing: '-0.02em',
-            textTransform: 'uppercase'
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
           }}>
-            DeviceBox Admin
-          </h1>
-          <p style={{
-            fontSize: '1rem',
-            marginTop: '0.5rem',
-            color: '#666666',
-            fontWeight: '400'
-          }}>
-            Geräteverwaltung und Scanner-Kontrolle
-          </p>
+            <div>
+              <h1 style={{
+                fontSize: '2rem',
+                fontWeight: '700',
+                margin: 0,
+                color: '#1a202c',
+                marginBottom: '0.5rem'
+              }}>
+                DeviceBox Admin
+              </h1>
+              <p style={{
+                fontSize: '1rem',
+                color: '#718096',
+                margin: 0
+              }}>
+                Geräteverwaltung und Scanner-Kontrolle
+              </p>
+            </div>
+            <div style={{
+              display: 'flex',
+              gap: '1rem',
+              alignItems: 'center'
+            }}>
+              <div style={{
+                background: '#edf2f7',
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                fontSize: '0.875rem',
+                color: '#4a5568',
+                fontWeight: '600'
+              }}>
+                {devices.length} {devices.length === 1 ? 'Gerät' : 'Geräte'}
+              </div>
+            </div>
+          </div>
         </header>
 
         {/* Main Content */}
         <main>
           <section>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '2rem'
+            <h2 style={{
+              fontSize: '1.5rem',
+              fontWeight: '600',
+              marginBottom: '1.5rem',
+              color: '#ffffff'
             }}>
-              <h2 style={{
-                fontSize: '1.5rem',
-                fontWeight: '600',
-                margin: 0,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em'
-              }}>
-                Geräteliste
-              </h2>
-              <div style={{
-                fontSize: '0.875rem',
-                color: '#666666'
-              }}>
-                {devices.length} {devices.length === 1 ? 'Gerät' : 'Geräte'}
-              </div>
-            </div>
+              Geräteliste
+            </h2>
 
             {loading ? (
               <div style={{
-                textAlign: 'center',
+                background: '#ffffff',
+                borderRadius: '12px',
                 padding: '4rem 2rem',
-                color: '#666666'
+                textAlign: 'center',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
               }}>
-                <div style={{ fontSize: '1rem' }}>Lade Geräte...</div>
+                <div style={{ fontSize: '1rem', color: '#718096' }}>Lade Geräte...</div>
               </div>
             ) : devices.length === 0 ? (
               <div style={{
-                textAlign: 'center',
+                background: '#ffffff',
+                borderRadius: '12px',
                 padding: '4rem 2rem',
-                color: '#666666',
-                border: '2px dashed #cccccc',
-                borderRadius: '8px'
+                textAlign: 'center',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
               }}>
-                <div style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Keine Geräte gefunden</div>
-                <div style={{ fontSize: '0.875rem', color: '#999999' }}>
+                <div style={{ fontSize: '1rem', color: '#718096', marginBottom: '0.5rem' }}>Keine Geräte gefunden</div>
+                <div style={{ fontSize: '0.875rem', color: '#a0aec0' }}>
                   Bitte verbinde ein unterstütztes Gerät über USB
                 </div>
               </div>
@@ -153,7 +229,8 @@ export default function AdminPage() {
                   <DeviceCard
                     key={device.id}
                     device={device}
-                    onToggle={(enabled) => toggleDevice(device.id, enabled)}
+                    onToggle={() => toggleDevice(device.id, device.enabled)}
+                    isToggling={toggling === device.id}
                   />
                 ))}
               </div>
@@ -165,153 +242,185 @@ export default function AdminPage() {
   )
 }
 
-function DeviceCard({ device, onToggle }: { device: Device; onToggle: (enabled: boolean) => void }) {
+function DeviceCard({ device, onToggle, isToggling }: { device: Device; onToggle: () => void; isToggling: boolean }) {
   return (
     <div style={{
       background: '#ffffff',
-      border: '2px solid #000000',
-      borderRadius: '0',
+      borderRadius: '12px',
       padding: '2rem',
-      display: 'grid',
-      gridTemplateColumns: '1fr auto',
-      gap: '2rem',
-      alignItems: 'start',
-      transition: 'all 0.2s ease',
-      boxShadow: '0 0 0 0 #000000'
+      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+      transition: 'transform 0.2s, box-shadow 0.2s',
+      border: '1px solid #e2e8f0'
     }}
     onMouseEnter={(e) => {
-      e.currentTarget.style.boxShadow = '4px 4px 0 0 #000000'
-      e.currentTarget.style.transform = 'translate(-2px, -2px)'
+      e.currentTarget.style.transform = 'translateY(-2px)'
+      e.currentTarget.style.boxShadow = '0 8px 12px rgba(0, 0, 0, 0.15)'
     }}
     onMouseLeave={(e) => {
-      e.currentTarget.style.boxShadow = '0 0 0 0 #000000'
-      e.currentTarget.style.transform = 'translate(0, 0)'
+      e.currentTarget.style.transform = 'translateY(0)'
+      e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)'
     }}
     >
-      <div>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '1rem',
-          marginBottom: '1rem'
-        }}>
-          <h3 style={{
-            fontSize: '1.5rem',
-            fontWeight: '600',
-            margin: 0,
-            letterSpacing: '-0.01em'
-          }}>
-            {device.name}
-          </h3>
-          <span style={{
-            fontSize: '0.75rem',
-            fontWeight: '600',
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            padding: '0.25rem 0.75rem',
-            background: device.connected ? '#000000' : '#cccccc',
-            color: device.connected ? '#ffffff' : '#666666',
-            borderRadius: '0'
-          }}>
-            {device.connected ? 'Verbunden' : 'Getrennt'}
-          </span>
-        </div>
-        
-        <p style={{
-          fontSize: '0.875rem',
-          color: '#666666',
-          margin: '0 0 1.5rem 0',
-          fontWeight: '400'
-        }}>
-          {device.type}
-        </p>
-
-        {device.lastScan && (
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr auto',
+        gap: '2rem',
+        alignItems: 'start'
+      }}>
+        <div>
           <div style={{
-            marginTop: '1.5rem',
-            padding: '1rem',
-            background: '#f5f5f5',
-            border: '1px solid #000000',
-            borderRadius: '0'
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+            marginBottom: '1rem'
           }}>
             <div style={{
-              fontSize: '0.75rem',
-              color: '#666666',
-              marginBottom: '0.5rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              fontWeight: '600'
+              width: '48px',
+              height: '48px',
+              background: device.connected ? '#48bb78' : '#cbd5e0',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.5rem'
             }}>
-              Letzter Barcode
+              📱
             </div>
-            <div style={{
-              fontSize: '1.25rem',
-              fontFamily: 'monospace',
-              color: '#000000',
-              fontWeight: '600',
-              letterSpacing: '0.05em'
-            }}>
-              {device.lastScan}
+            <div style={{ flex: 1 }}>
+              <h3 style={{
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                margin: 0,
+                color: '#1a202c',
+                marginBottom: '0.25rem'
+              }}>
+                {device.name}
+              </h3>
+              <div style={{
+                display: 'flex',
+                gap: '1rem',
+                alignItems: 'center'
+              }}>
+                <span style={{
+                  fontSize: '0.875rem',
+                  fontWeight: '600',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  padding: '0.25rem 0.75rem',
+                  background: device.connected ? '#c6f6d5' : '#fed7d7',
+                  color: device.connected ? '#22543d' : '#742a2a',
+                  borderRadius: '6px'
+                }}>
+                  {device.connected ? '✓ Verbunden' : '✗ Getrennt'}
+                </span>
+                <span style={{
+                  fontSize: '0.875rem',
+                  color: '#718096'
+                }}>
+                  {device.type}
+                </span>
+              </div>
             </div>
           </div>
-        )}
-      </div>
 
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-end',
-        gap: '1rem'
-      }}>
+          {device.lastScan && (
+            <div style={{
+              marginTop: '1.5rem',
+              padding: '1rem',
+              background: '#f7fafc',
+              border: '2px solid #e2e8f0',
+              borderRadius: '8px'
+            }}>
+              <div style={{
+                fontSize: '0.75rem',
+                color: '#718096',
+                marginBottom: '0.5rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                fontWeight: '600'
+              }}>
+                Letzter Barcode
+              </div>
+              <div style={{
+                fontSize: '1.5rem',
+                fontFamily: 'monospace',
+                color: '#1a202c',
+                fontWeight: '600',
+                letterSpacing: '0.1em',
+                wordBreak: 'break-all'
+              }}>
+                {device.lastScan}
+              </div>
+            </div>
+          )}
+        </div>
+
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-end',
-          gap: '0.5rem'
+          gap: '1rem'
         }}>
-          <span style={{
-            fontSize: '0.875rem',
-            fontWeight: '600',
-            color: device.enabled ? '#000000' : '#999999',
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em'
-          }}>
-            {device.enabled ? 'Aktiv' : 'Inaktiv'}
-          </span>
-          <label style={{
+          <div style={{
             display: 'flex',
-            alignItems: 'center',
-            gap: '0.75rem',
-            cursor: 'pointer',
-            userSelect: 'none'
+            flexDirection: 'column',
+            alignItems: 'flex-end',
+            gap: '0.75rem'
           }}>
-            <div
-              onClick={() => onToggle(!device.enabled)}
-              style={{
-                width: '60px',
-                height: '32px',
-                background: device.enabled ? '#000000' : '#e0e0e0',
-                borderRadius: '0',
-                position: 'relative',
-                cursor: 'pointer',
-                transition: 'background 0.2s',
-                border: '2px solid #000000'
-              }}
-            >
-              <div style={{
-                width: '24px',
-                height: '24px',
-                background: '#ffffff',
-                borderRadius: '0',
-                position: 'absolute',
-                top: '2px',
-                left: device.enabled ? '30px' : '2px',
-                transition: 'left 0.2s',
-                border: '2px solid #000000',
-                boxSizing: 'border-box'
-              }} />
-            </div>
-          </label>
+            <span style={{
+              fontSize: '0.875rem',
+              fontWeight: '600',
+              color: device.enabled ? '#48bb78' : '#a0aec0',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
+            }}>
+              {device.enabled ? 'Aktiv' : 'Inaktiv'}
+            </span>
+            <label style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              cursor: isToggling ? 'wait' : 'pointer',
+              userSelect: 'none',
+              opacity: isToggling ? 0.6 : 1
+            }}>
+              <div
+                onClick={isToggling ? undefined : onToggle}
+                style={{
+                  width: '64px',
+                  height: '36px',
+                  background: device.enabled ? '#48bb78' : '#cbd5e0',
+                  borderRadius: '18px',
+                  position: 'relative',
+                  cursor: isToggling ? 'wait' : 'pointer',
+                  transition: 'background 0.3s ease',
+                  border: '2px solid transparent',
+                  boxSizing: 'border-box'
+                }}
+              >
+                <div style={{
+                  width: '28px',
+                  height: '28px',
+                  background: '#ffffff',
+                  borderRadius: '50%',
+                  position: 'absolute',
+                  top: '2px',
+                  left: device.enabled ? '30px' : '2px',
+                  transition: 'left 0.3s ease',
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+                }} />
+              </div>
+            </label>
+            {isToggling && (
+              <span style={{
+                fontSize: '0.75rem',
+                color: '#718096',
+                fontStyle: 'italic'
+              }}>
+                Wird umgeschaltet...
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </div>
