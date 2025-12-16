@@ -22,7 +22,7 @@ async function deploy(): Promise<boolean> {
     }
 
     // Hole aktuellen Branch
-    const currentBranch = await git.revParse(['--abbrev-ref', 'HEAD']);
+    const currentBranch = await git.revparse(['--abbrev-ref', 'HEAD']);
     console.log(`Aktueller Branch: ${currentBranch}`);
 
     // Pull neuesten Code
