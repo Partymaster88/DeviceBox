@@ -1,0 +1,31 @@
+{
+  "name": "devicebox",
+  "version": "1.0.0",
+  "description": "Raspberry Pi DeviceBox mit Next.js, WiFi AP und Auto-Deploy",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "setup": "tsx scripts/setup.ts",
+    "check-wifi": "tsx scripts/check-wifi.ts",
+    "deploy": "tsx scripts/deploy.ts"
+  },
+  "dependencies": {
+    "next": "^14.2.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "pm2": "^5.3.0",
+    "simple-git": "^3.22.0",
+    "node-wifi": "^2.0.16"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^5.4.0",
+    "tsx": "^4.7.0"
+  }
+}
+
