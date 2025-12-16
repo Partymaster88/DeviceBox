@@ -106,7 +106,15 @@ export async function startAccessPoint(): Promise<boolean> {
 
     // Aktiviere IP Forwarding
     execSync('sysctl -w net.ipv4.ip_forward=1', { stdio: 'inherit' });
-    execSync('iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE', { stdio: 'inherit' });
+    
+    // Konfiguriere nftables für NAT (Ubuntu 20.04+ verwendet nftables statt iptables)
+    try {
+      // Prüfe ob nftables-Regel bereits existiert
+      execSync('nft list ruleset | grep -q "oifname \\"eth0\\" masquerade"', { stdio: 'pipe' });
+    } catch {
+      // Füge NAT-Regel hinzu falls nicht vorhanden
+      execSync('nft add rule ip nat postrouting oifname eth0 masquerade', { stdio: 'inherit' });
+    }
 
     console.log('Access Point gestartet');
     return true;

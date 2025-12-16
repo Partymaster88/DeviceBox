@@ -68,19 +68,33 @@ if ! grep -q "net.ipv4.ip_forward=1" /etc/sysctl.conf; then
     echo "net.ipv4.ip_forward=1" | sudo tee -a /etc/sysctl.conf
 fi
 
-# Konfiguriere iptables für NAT
-sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-sudo sh -c "iptables-save > /etc/iptables.ipv4.nat"
-
-# Lade iptables beim Booten
-if [ ! -f /etc/rc.local ]; then
-    sudo tee /etc/rc.local > /dev/null <<'EOF'
-#!/bin/sh -e
-iptables-restore < /etc/iptables.ipv4.nat
-exit 0
-EOF
-    sudo chmod +x /etc/rc.local
+# Konfiguriere nftables für NAT (Ubuntu 20.04+ verwendet nftables statt iptables)
+# Installiere nftables falls nicht vorhanden
+if ! command -v nft &> /dev/null; then
+    echo "Installiere nftables..."
+    sudo apt-get install -y nftables
 fi
+
+# Erstelle NAT-Tabelle und Chain falls nicht vorhanden
+if ! sudo nft list tables | grep -q "table ip nat"; then
+    sudo nft create table ip nat
+fi
+
+if ! sudo nft list chain ip nat postrouting &> /dev/null; then
+    sudo nft create chain ip nat postrouting { type nat hook postrouting priority 100 \; }
+fi
+
+# Füge MASQUERADE-Regel hinzu falls nicht vorhanden
+if ! sudo nft list chain ip nat postrouting | grep -q "oifname \"eth0\" masquerade"; then
+    sudo nft add rule ip nat postrouting oifname eth0 masquerade
+fi
+
+# Speichere nftables-Regeln permanent
+sudo nft list ruleset | sudo tee /etc/nftables.conf > /dev/null
+
+# Aktiviere nftables Service
+sudo systemctl enable nftables
+sudo systemctl start nftables
 
 echo "Access Point Konfiguration abgeschlossen"
 echo "SSID: $AP_SSID"

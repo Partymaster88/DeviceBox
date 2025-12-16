@@ -36,8 +36,8 @@ sudo apt-get install -y hostapd dnsmasq
 echo "Installiere Avahi (mDNS)..."
 sudo apt-get install -y avahi-daemon
 
-# Installiere weitere benötigte Tools
-sudo apt-get install -y iptables-persistent
+# Installiere weitere benötigte Tools (nftables statt iptables für Ubuntu 20.04+)
+sudo apt-get install -y nftables
 
 echo "System-Dependencies Installation abgeschlossen"
 echo "Node.js Version: $(node --version)"
