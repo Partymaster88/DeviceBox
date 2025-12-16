@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToWifi } from '../../../scripts/wifi-manager';
-import { stopAccessPoint } from '../../../scripts/access-point';
+import { connectToWifi } from '@/lib/wifi-manager';
+import { stopAccessPoint } from '@/lib/access-point';
 
 export async function POST(request: NextRequest) {
   try {

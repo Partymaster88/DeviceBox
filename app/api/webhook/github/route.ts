@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { handleGitHubWebhook } from '../../../scripts/github-webhook';
+import { handleGitHubWebhook } from '@/lib/github-webhook';
 
 export async function POST(request: NextRequest) {
   try {
