@@ -24,40 +24,68 @@ export class ScannerManager extends EventEmitter {
 
   constructor() {
     super();
+    console.log('ScannerManager initialisiert');
     this.startScanListener();
   }
+  
+  /**
+   * Öffentliche Methode zum manuellen Auslösen der Geräteerkennung
+   */
+  public detectDevices(): void {
+    console.log('Manuelle Geräteerkennung ausgelöst');
+    this.detectDevicesPrivate();
+  }
+  
+  /**
+   * Private Methode für Geräteerkennung
+   */
+  private detectDevicesPrivate(): void {
 
   /**
    * Startet den Listener für Barcode-Scans
    * USB-Barcode-Scanner emulieren eine Tastatur, daher lesen wir /dev/input
    */
   private startScanListener(): void {
-    // Prüfe auf USB-Geräte
+    // Initiale Erkennung
+    this.detectDevicesPrivate();
+    
+    // Prüfe auf USB-Geräte regelmäßig
     setInterval(() => {
-      this.detectDevices();
+      this.detectDevicesPrivate();
     }, 2000);
   }
 
   /**
-   * Erkennt angeschlossene Scanner-Geräte
+   * Erkennt angeschlossene Scanner-Geräte (private)
    */
-  private detectDevices(): void {
+  private detectDevicesPrivate(): void {
     try {
       // Prüfe auf Datalogic Touch 65 (USB HID)
       // Vendor ID für Datalogic: 0x05f9 oder 0x05f9
       const usbDevices = execSync('lsusb', { encoding: 'utf-8' });
       
+      // Debug: Log USB-Geräte
+      console.log('USB-Geräte:', usbDevices);
+      
       // Suche nach Datalogic/PSC Scanning Geräten
       // Vendor ID: 05f9 (PSC Scanning, Inc. / Datalogic)
       // Product ID: 2214 (Handheld Barcode Scanner)
       const scannerPatterns = [
-        /Datalogic/i,
+        /05f9:2214/i,  // Spezifische Product ID zuerst
         /PSC Scanning/i,
-        /05f9:2214/i,
+        /Datalogic/i,
         /05f9/i
       ];
       
-      const hasScanner = scannerPatterns.some(pattern => pattern.test(usbDevices));
+      const hasScanner = scannerPatterns.some(pattern => {
+        const match = pattern.test(usbDevices);
+        if (match) {
+          console.log('Scanner gefunden mit Pattern:', pattern);
+        }
+        return match;
+      });
+      
+      console.log('Scanner erkannt:', hasScanner);
       
       if (hasScanner) {
         const deviceId = 'datalogic-touch65-1';
