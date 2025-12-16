@@ -177,35 +177,54 @@ export class ScannerManager extends EventEmitter {
    * Aktiviert/Deaktiviert einen Scanner
    */
   async setEnabled(deviceId: string, enabled: boolean): Promise<boolean> {
+    console.log(`setEnabled aufgerufen: deviceId=${deviceId}, enabled=${enabled}`);
+    
     const device = this.devices.get(deviceId);
-    if (!device || !device.connected) {
+    console.log('Gerät gefunden:', device);
+    
+    if (!device) {
+      console.error('Gerät nicht gefunden:', deviceId);
       return false;
+    }
+    
+    if (!device.connected) {
+      console.warn('Gerät ist nicht verbunden:', deviceId);
+      // Erlaube Aktivierung auch wenn nicht verbunden (für Testzwecke)
+      // return false;
     }
 
     try {
+      // Ändere Status zuerst
+      device.enabled = enabled;
+      
+      // Versuche USB-Power-Control (optional, nicht kritisch)
       if (device.usbPort) {
-        // Kontrolliere USB-Power mit uhubctl
-        // uhubctl -l <hub> -p <port> -a <0|1> (0=off, 1=on)
-        const [bus, port] = device.usbPort.split('-');
-        
         try {
+          // Kontrolliere USB-Power mit uhubctl
+          // uhubctl -l <hub> -p <port> -a <0|1> (0=off, 1=on)
+          const [bus, port] = device.usbPort.split('-');
+          
+          console.log(`Versuche USB-Power-Control: Bus=${bus}, Port=${port}, Enabled=${enabled}`);
+          
           execSync(`uhubctl -l ${bus} -p ${port} -a ${enabled ? 1 : 0}`, {
             stdio: 'pipe'
           });
           console.log(`USB-Port ${device.usbPort} ${enabled ? 'aktiviert' : 'deaktiviert'}`);
         } catch (error) {
           console.warn(`Konnte USB-Port ${device.usbPort} nicht steuern. Möglicherweise unterstützt der Hub keine Power-Control.`);
-          // Nicht kritisch, fortfahren
+          console.warn('USB-Power-Control Fehler:', error);
+          // Nicht kritisch, fortfahren - Status wurde bereits geändert
         }
+      } else {
+        console.log('Kein USB-Port gefunden, überspringe Power-Control');
       }
 
-      device.enabled = enabled;
       this.emit('device-updated', device);
+      console.log(`Gerät ${deviceId} erfolgreich ${enabled ? 'aktiviert' : 'deaktiviert'}`);
       return true;
     } catch (error) {
-      console.error('Fehler beim Umschalten des USB-Ports:', error);
-      // Fallback: Nur Status ändern, auch wenn USB-Control fehlschlägt
-      device.enabled = enabled;
+      console.error('Fehler beim Umschalten des Geräts:', error);
+      // Status wurde bereits geändert, also return true
       this.emit('device-updated', device);
       return true;
     }

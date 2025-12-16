@@ -35,16 +35,26 @@ export default function AdminPage() {
 
   const toggleDevice = async (deviceId: string, enabled: boolean) => {
     try {
+      console.log(`Toggle Device: ${deviceId}, enabled: ${enabled}`);
+      
       const res = await fetch(`/api/devices/${deviceId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled })
       })
+      
+      const data = await res.json();
+      console.log('API Response:', data);
+      
       if (res.ok) {
         loadDevices()
+      } else {
+        console.error('API Fehler:', data);
+        alert(`Fehler: ${data.error || 'Unbekannter Fehler'}`);
       }
     } catch (error) {
       console.error('Fehler beim Umschalten des Geräts:', error)
+      alert(`Fehler beim Umschalten: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
