@@ -29,19 +29,6 @@ export class ScannerManager extends EventEmitter {
   }
   
   /**
-   * Öffentliche Methode zum manuellen Auslösen der Geräteerkennung
-   */
-  public detectDevices(): void {
-    console.log('Manuelle Geräteerkennung ausgelöst');
-    this.detectDevicesPrivate();
-  }
-  
-  /**
-   * Private Methode für Geräteerkennung
-   */
-  private detectDevicesPrivate(): void {
-
-  /**
    * Startet den Listener für Barcode-Scans
    * USB-Barcode-Scanner emulieren eine Tastatur, daher lesen wir /dev/input
    */
@@ -53,6 +40,14 @@ export class ScannerManager extends EventEmitter {
     setInterval(() => {
       this.detectDevicesPrivate();
     }, 2000);
+  }
+
+  /**
+   * Öffentliche Methode zum manuellen Auslösen der Geräteerkennung
+   */
+  public detectDevices(): void {
+    console.log('Manuelle Geräteerkennung ausgelöst');
+    this.detectDevicesPrivate();
   }
 
   /**
