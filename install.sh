@@ -31,16 +31,12 @@ if ! command -v git &> /dev/null; then
     sudo apt-get install -y git
 fi
 
-# Prüfe ob wir bereits in einem DeviceBox Verzeichnis sind
-if [ -f "package.json" ] && grep -q "devicebox" package.json 2>/dev/null; then
-    # Wir sind bereits im Repository
-    SCRIPT_DIR="$(pwd)"
-    echo "Repository bereits vorhanden in: $SCRIPT_DIR"
-elif [ -d "$INSTALL_DIR" ] && [ -f "$INSTALL_DIR/package.json" ]; then
+# Prüfe ob Repository bereits existiert
+if [ -d "$INSTALL_DIR" ] && [ -f "$INSTALL_DIR/package.json" ]; then
     # Repository existiert bereits
     SCRIPT_DIR="$INSTALL_DIR"
     echo "Verwende vorhandenes Repository in: $SCRIPT_DIR"
-    cd "$SCRIPT_DIR"
+    cd "$INSTALL_DIR"
     echo "Aktualisiere Repository..."
     git pull || true
 else
@@ -54,8 +50,20 @@ else
     cd "$SCRIPT_DIR"
 fi
 
-# Installiere System-Dependencies
+# Stelle sicher, dass wir im richtigen Verzeichnis sind
+cd "$SCRIPT_DIR"
+
+# Prüfe ob das Repository korrekt geklont wurde
+if [ ! -f "$SCRIPT_DIR/package.json" ] || [ ! -d "$SCRIPT_DIR/scripts" ]; then
+    echo "Fehler: Repository wurde nicht korrekt geklont oder ist unvollständig"
+    echo "Bitte manuell klonen: git clone $GITHUB_REPO $INSTALL_DIR"
+    exit 1
+fi
+
+echo "Verwende Repository in: $SCRIPT_DIR"
 echo ""
+
+# Installiere System-Dependencies
 echo "Installiere System-Dependencies..."
 bash "$SCRIPT_DIR/scripts/install-dependencies.sh"
 
@@ -133,4 +141,3 @@ echo ""
 echo "Wechsel ins Installationsverzeichnis:"
 echo "  cd $SCRIPT_DIR"
 echo ""
-
