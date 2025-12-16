@@ -47,27 +47,35 @@ export class ScannerManager extends EventEmitter {
       // Vendor ID für Datalogic: 0x05f9 oder 0x05f9
       const usbDevices = execSync('lsusb', { encoding: 'utf-8' });
       
-      // Suche nach Datalogic Geräten (verschiedene mögliche Vendor IDs)
-      const datalogicPatterns = [
+      // Suche nach Datalogic/PSC Scanning Geräten
+      // Vendor ID: 05f9 (PSC Scanning, Inc. / Datalogic)
+      // Product ID: 2214 (Handheld Barcode Scanner)
+      const scannerPatterns = [
         /Datalogic/i,
-        /05f9/i,
-        /05f9:.*Datalogic/i
+        /PSC Scanning/i,
+        /05f9:2214/i,
+        /05f9/i
       ];
       
-      const hasDatalogic = datalogicPatterns.some(pattern => pattern.test(usbDevices));
+      const hasScanner = scannerPatterns.some(pattern => pattern.test(usbDevices));
       
-      if (hasDatalogic) {
+      if (hasScanner) {
         const deviceId = 'datalogic-touch65-1';
         
         if (!this.devices.has(deviceId)) {
           // Finde USB-Port für Power-Control
           const usbPort = this.findUsbPort();
           
+          // Extrahiere genauen Gerätenamen aus lsusb
+          const deviceMatch = usbDevices.match(/05f9:2214\s+(.+)/);
+          const deviceName = deviceMatch ? deviceMatch[1].trim() : 'Datalogic Touch 65';
+          
           const device: ScannerDevice = {
             id: deviceId,
-            name: 'Datalogic Touch 65',
+            name: deviceName,
             type: 'USB Barcode Scanner',
             vendorId: '05f9',
+            productId: '2214',
             connected: true,
             enabled: false,
             usbPort: usbPort
@@ -107,9 +115,9 @@ export class ScannerManager extends EventEmitter {
       const usbTree = execSync('lsusb -t', { encoding: 'utf-8' });
       const lines = usbTree.split('\n');
       
-      // Suche nach Datalogic Gerät
+      // Suche nach Scanner-Gerät (05f9:2214)
       for (let i = 0; i < lines.length; i++) {
-        if (lines[i].includes('Datalogic') || lines[i].includes('05f9')) {
+        if (lines[i].includes('05f9:2214') || lines[i].includes('PSC Scanning') || lines[i].includes('Datalogic') || lines[i].includes('05f9')) {
           // Extrahiere Bus und Port
           // Format: /:  Bus 01.Port 1: Dev 1, Class=root_hub, Driver=...
           const busMatch = lines[i].match(/Bus (\d+)/);

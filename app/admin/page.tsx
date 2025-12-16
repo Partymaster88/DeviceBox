@@ -17,7 +17,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     loadDevices()
-    const interval = setInterval(loadDevices, 2000) // Aktualisiere alle 2 Sekunden
+    const interval = setInterval(loadDevices, 2000)
     return () => clearInterval(interval)
   }, [])
 
@@ -51,51 +51,93 @@ export default function AdminPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#000',
-      color: '#fff',
-      padding: '2rem',
-      fontFamily: 'system-ui, -apple-system, sans-serif'
+      background: '#ffffff',
+      color: '#000000',
+      padding: 0,
+      margin: 0,
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
     }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{
+        maxWidth: '1400px',
+        margin: '0 auto',
+        padding: '3rem 2rem'
+      }}>
+        {/* Header */}
         <header style={{
-          marginBottom: '3rem',
-          borderBottom: '2px solid #fff',
-          paddingBottom: '1rem'
+          marginBottom: '4rem',
+          paddingBottom: '2rem',
+          borderBottom: '2px solid #000000'
         }}>
           <h1 style={{
-            fontSize: '2rem',
-            fontWeight: 'bold',
+            fontSize: '2.5rem',
+            fontWeight: '700',
             margin: 0,
-            letterSpacing: '0.05em'
+            letterSpacing: '-0.02em',
+            textTransform: 'uppercase'
           }}>
             DeviceBox Admin
           </h1>
+          <p style={{
+            fontSize: '1rem',
+            marginTop: '0.5rem',
+            color: '#666666',
+            fontWeight: '400'
+          }}>
+            Geräteverwaltung und Scanner-Kontrolle
+          </p>
         </header>
 
+        {/* Main Content */}
         <main>
           <section>
-            <h2 style={{
-              fontSize: '1.5rem',
-              fontWeight: '600',
-              marginBottom: '1.5rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.1em'
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '2rem'
             }}>
-              Geräteliste
-            </h2>
+              <h2 style={{
+                fontSize: '1.5rem',
+                fontWeight: '600',
+                margin: 0,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em'
+              }}>
+                Geräteliste
+              </h2>
+              <div style={{
+                fontSize: '0.875rem',
+                color: '#666666'
+              }}>
+                {devices.length} {devices.length === 1 ? 'Gerät' : 'Geräte'}
+              </div>
+            </div>
 
             {loading ? (
-              <div style={{ color: '#888', textAlign: 'center', padding: '2rem' }}>
-                Lade Geräte...
+              <div style={{
+                textAlign: 'center',
+                padding: '4rem 2rem',
+                color: '#666666'
+              }}>
+                <div style={{ fontSize: '1rem' }}>Lade Geräte...</div>
               </div>
             ) : devices.length === 0 ? (
-              <div style={{ color: '#888', textAlign: 'center', padding: '2rem' }}>
-                Keine Geräte gefunden
+              <div style={{
+                textAlign: 'center',
+                padding: '4rem 2rem',
+                color: '#666666',
+                border: '2px dashed #cccccc',
+                borderRadius: '8px'
+              }}>
+                <div style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>Keine Geräte gefunden</div>
+                <div style={{ fontSize: '0.875rem', color: '#999999' }}>
+                  Bitte verbinde ein unterstütztes Gerät über USB
+                </div>
               </div>
             ) : (
               <div style={{
                 display: 'grid',
-                gap: '1rem'
+                gap: '1.5rem'
               }}>
                 {devices.map((device) => (
                   <DeviceCard
@@ -116,66 +158,88 @@ export default function AdminPage() {
 function DeviceCard({ device, onToggle }: { device: Device; onToggle: (enabled: boolean) => void }) {
   return (
     <div style={{
-      background: '#111',
-      border: '1px solid #333',
-      borderRadius: '4px',
-      padding: '1.5rem',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      gap: '1rem'
-    }}>
-      <div style={{ flex: 1 }}>
+      background: '#ffffff',
+      border: '2px solid #000000',
+      borderRadius: '0',
+      padding: '2rem',
+      display: 'grid',
+      gridTemplateColumns: '1fr auto',
+      gap: '2rem',
+      alignItems: 'start',
+      transition: 'all 0.2s ease',
+      boxShadow: '0 0 0 0 #000000'
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.boxShadow = '4px 4px 0 0 #000000'
+      e.currentTarget.style.transform = 'translate(-2px, -2px)'
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.boxShadow = '0 0 0 0 #000000'
+      e.currentTarget.style.transform = 'translate(0, 0)'
+    }}
+    >
+      <div>
         <div style={{
           display: 'flex',
           alignItems: 'center',
           gap: '1rem',
-          marginBottom: '0.5rem'
+          marginBottom: '1rem'
         }}>
           <h3 style={{
-            fontSize: '1.25rem',
+            fontSize: '1.5rem',
             fontWeight: '600',
-            margin: 0
+            margin: 0,
+            letterSpacing: '-0.01em'
           }}>
             {device.name}
           </h3>
           <span style={{
-            fontSize: '0.875rem',
-            color: device.connected ? '#0f0' : '#888',
+            fontSize: '0.75rem',
+            fontWeight: '600',
             textTransform: 'uppercase',
-            letterSpacing: '0.05em'
+            letterSpacing: '0.1em',
+            padding: '0.25rem 0.75rem',
+            background: device.connected ? '#000000' : '#cccccc',
+            color: device.connected ? '#ffffff' : '#666666',
+            borderRadius: '0'
           }}>
-            {device.connected ? 'Verbunden' : 'Nicht verbunden'}
+            {device.connected ? 'Verbunden' : 'Getrennt'}
           </span>
         </div>
+        
         <p style={{
           fontSize: '0.875rem',
-          color: '#888',
-          margin: '0.5rem 0 0 0'
+          color: '#666666',
+          margin: '0 0 1.5rem 0',
+          fontWeight: '400'
         }}>
           {device.type}
         </p>
+
         {device.lastScan && (
           <div style={{
-            marginTop: '1rem',
-            padding: '0.75rem',
-            background: '#000',
-            border: '1px solid #333',
-            borderRadius: '2px'
+            marginTop: '1.5rem',
+            padding: '1rem',
+            background: '#f5f5f5',
+            border: '1px solid #000000',
+            borderRadius: '0'
           }}>
             <div style={{
               fontSize: '0.75rem',
-              color: '#888',
-              marginBottom: '0.25rem',
+              color: '#666666',
+              marginBottom: '0.5rem',
               textTransform: 'uppercase',
-              letterSpacing: '0.05em'
+              letterSpacing: '0.05em',
+              fontWeight: '600'
             }}>
               Letzter Barcode
             </div>
             <div style={{
-              fontSize: '1rem',
+              fontSize: '1.25rem',
               fontFamily: 'monospace',
-              color: '#fff'
+              color: '#000000',
+              fontWeight: '600',
+              letterSpacing: '0.05em'
             }}>
               {device.lastScan}
             </div>
@@ -187,48 +251,59 @@ function DeviceCard({ device, onToggle }: { device: Device; onToggle: (enabled: 
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'flex-end',
-        gap: '0.5rem'
+        gap: '1rem'
       }}>
-        <label style={{
+        <div style={{
           display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          cursor: 'pointer',
-          userSelect: 'none'
+          flexDirection: 'column',
+          alignItems: 'flex-end',
+          gap: '0.5rem'
         }}>
           <span style={{
             fontSize: '0.875rem',
-            color: device.enabled ? '#fff' : '#888'
+            fontWeight: '600',
+            color: device.enabled ? '#000000' : '#999999',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em'
           }}>
             {device.enabled ? 'Aktiv' : 'Inaktiv'}
           </span>
-          <div
-            onClick={() => onToggle(!device.enabled)}
-            style={{
-              width: '48px',
-              height: '24px',
-              background: device.enabled ? '#fff' : '#333',
-              borderRadius: '12px',
-              position: 'relative',
-              cursor: 'pointer',
-              transition: 'background 0.2s',
-              border: '1px solid #666'
-            }}
-          >
-            <div style={{
-              width: '20px',
-              height: '20px',
-              background: device.enabled ? '#000' : '#666',
-              borderRadius: '50%',
-              position: 'absolute',
-              top: '1px',
-              left: device.enabled ? '25px' : '1px',
-              transition: 'left 0.2s'
-            }} />
-          </div>
-        </label>
+          <label style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            cursor: 'pointer',
+            userSelect: 'none'
+          }}>
+            <div
+              onClick={() => onToggle(!device.enabled)}
+              style={{
+                width: '60px',
+                height: '32px',
+                background: device.enabled ? '#000000' : '#e0e0e0',
+                borderRadius: '0',
+                position: 'relative',
+                cursor: 'pointer',
+                transition: 'background 0.2s',
+                border: '2px solid #000000'
+              }}
+            >
+              <div style={{
+                width: '24px',
+                height: '24px',
+                background: '#ffffff',
+                borderRadius: '0',
+                position: 'absolute',
+                top: '2px',
+                left: device.enabled ? '30px' : '2px',
+                transition: 'left 0.2s',
+                border: '2px solid #000000',
+                boxSizing: 'border-box'
+              }} />
+            </div>
+          </label>
+        </div>
       </div>
     </div>
   )
 }
-
