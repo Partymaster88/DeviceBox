@@ -109,11 +109,29 @@ export async function startAccessPoint(): Promise<boolean> {
     
     // Konfiguriere nftables für NAT (Ubuntu 20.04+ verwendet nftables statt iptables)
     try {
-      // Prüfe ob nftables-Regel bereits existiert
-      execSync('nft list ruleset | grep -q "oifname \\"eth0\\" masquerade"', { stdio: 'pipe' });
-    } catch {
-      // Füge NAT-Regel hinzu falls nicht vorhanden
-      execSync('nft add rule ip nat postrouting oifname eth0 masquerade', { stdio: 'inherit' });
+      // Prüfe ob NAT-Tabelle existiert, erstelle sie falls nicht
+      try {
+        execSync('nft list tables | grep -q "table ip nat"', { stdio: 'pipe' });
+      } catch {
+        execSync('nft create table ip nat', { stdio: 'inherit' });
+      }
+
+      // Prüfe ob postrouting Chain existiert, erstelle sie falls nicht
+      try {
+        execSync('nft list chain ip nat postrouting', { stdio: 'pipe' });
+      } catch {
+        execSync('nft create chain ip nat postrouting { type nat hook postrouting priority 100 \\; }', { stdio: 'inherit' });
+      }
+
+      // Prüfe ob MASQUERADE-Regel bereits existiert, füge sie hinzu falls nicht
+      try {
+        execSync('nft list chain ip nat postrouting | grep -q "oifname \\"eth0\\" masquerade"', { stdio: 'pipe' });
+      } catch {
+        execSync('nft add rule ip nat postrouting oifname eth0 masquerade', { stdio: 'inherit' });
+      }
+    } catch (error) {
+      console.error('Fehler bei nftables Konfiguration:', error);
+      // Nicht kritisch, Access Point kann auch ohne NAT funktionieren
     }
 
     console.log('Access Point gestartet');
