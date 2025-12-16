@@ -39,6 +39,10 @@ sudo apt-get install -y avahi-daemon
 # Installiere weitere benötigte Tools (nftables statt iptables für Ubuntu 20.04+)
 sudo apt-get install -y nftables
 
+# Installiere USB-Tools für Scanner und Power-Control
+echo "Installiere USB-Tools..."
+sudo apt-get install -y uhubctl evtest usbutils
+
 echo "System-Dependencies Installation abgeschlossen"
 echo "Node.js Version: $(node --version)"
 echo "npm Version: $(npm --version)"

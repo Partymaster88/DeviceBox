@@ -75,6 +75,24 @@ export default function Home() {
                 <p style={{ fontSize: '0.85rem', opacity: 0.7 }}>Netzwerk: {wifiStatus.ssid}</p>
               )}
               <p style={{ marginTop: '1rem' }}>System bereit und funktionsfähig</p>
+              <a
+                href="/admin"
+                style={{
+                  display: 'inline-block',
+                  marginTop: '1.5rem',
+                  padding: '0.75rem 1.5rem',
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  borderRadius: '8px',
+                  color: '#fff',
+                  textDecoration: 'none',
+                  fontSize: '0.9rem',
+                  fontWeight: '500',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                Admin Interface öffnen →
+              </a>
             </div>
           ) : (
             <div>
