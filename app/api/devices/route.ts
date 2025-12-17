@@ -5,14 +5,19 @@ export async function GET() {
   try {
     const scannerManager = getScannerManager();
     
-    // Erzwinge Geräteerkennung (öffentliche Methode)
+    // Erzwinge Geräteerkennung (wird intern geprüft ob Build)
     scannerManager.detectDevices();
     
     const devices = scannerManager.getDevices();
     
-    console.log('API /devices aufgerufen, gefundene Geräte:', devices.length);
-    if (devices.length > 0) {
-      console.log('Geräte:', JSON.stringify(devices, null, 2));
+    // Logging nur zur Laufzeit
+    const isBuild = process.env.NEXT_PHASE === 'phase-production-build' || 
+                    process.argv.includes('build');
+    if (!isBuild) {
+      console.log('API /devices aufgerufen, gefundene Geräte:', devices.length);
+      if (devices.length > 0) {
+        console.log('Geräte:', JSON.stringify(devices, null, 2));
+      }
     }
     
     return NextResponse.json({

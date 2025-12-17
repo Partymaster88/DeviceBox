@@ -1,10 +1,15 @@
+'use client'
+
 import Link from 'next/link'
+import { useState } from 'react'
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const [hovered, setHovered] = useState(false)
+
   return (
     <>
       <nav style={{
@@ -22,21 +27,20 @@ export default function AdminLayout({
           gap: '2rem',
           alignItems: 'center'
         }}>
-          <Link href="/" style={{
-            color: '#667eea',
-            textDecoration: 'none',
-            fontSize: '0.875rem',
-            fontWeight: '500',
-            padding: '0.5rem 1rem',
-            borderRadius: '6px',
-            transition: 'background 0.2s'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#f7fafc'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'transparent'
-          }}
+          <Link 
+            href="/" 
+            style={{
+              color: '#667eea',
+              textDecoration: 'none',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              padding: '0.5rem 1rem',
+              borderRadius: '6px',
+              transition: 'background 0.2s',
+              background: hovered ? '#f7fafc' : 'transparent'
+            }}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
           >
             ← Zurück zur Startseite
           </Link>

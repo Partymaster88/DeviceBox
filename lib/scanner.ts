@@ -24,8 +24,17 @@ export class ScannerManager extends EventEmitter {
 
   constructor() {
     super();
-    console.log('ScannerManager initialisiert');
-    this.startScanListener();
+    // Starte Listener nur zur Laufzeit, nicht beim Build
+    // Prüfe ob wir in einem Build-Kontext sind
+    const isBuild = process.env.NEXT_PHASE === 'phase-production-build' || 
+                    process.argv.includes('build') ||
+                    (typeof process.env.npm_lifecycle_event !== 'undefined' && 
+                     process.env.npm_lifecycle_event === 'build');
+    
+    if (!isBuild) {
+      console.log('ScannerManager initialisiert');
+      this.startScanListener();
+    }
   }
   
   /**
@@ -54,13 +63,24 @@ export class ScannerManager extends EventEmitter {
    * Erkennt angeschlossene Scanner-Geräte (private)
    */
   private detectDevicesPrivate(): void {
+    // Überspringe während des Builds - verhindert Timeout
+    const isBuild = process.env.NEXT_PHASE === 'phase-production-build' || 
+                    process.argv.includes('build') ||
+                    (typeof process.env.npm_lifecycle_event !== 'undefined' && 
+                     process.env.npm_lifecycle_event === 'build');
+    if (isBuild) {
+      return;
+    }
+    
     try {
       // Prüfe auf Datalogic Touch 65 (USB HID)
       // Vendor ID für Datalogic: 0x05f9 oder 0x05f9
       const usbDevices = execSync('lsusb', { encoding: 'utf-8' });
       
-      // Debug: Log USB-Geräte
-      console.log('USB-Geräte:', usbDevices);
+      // Debug: Log USB-Geräte (nur zur Laufzeit)
+      if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_SCANNER) {
+        console.log('USB-Geräte:', usbDevices);
+      }
       
       // Suche nach Datalogic/PSC Scanning Geräten
       // Vendor ID: 05f9 (PSC Scanning, Inc. / Datalogic)
@@ -74,13 +94,15 @@ export class ScannerManager extends EventEmitter {
       
       const hasScanner = scannerPatterns.some(pattern => {
         const match = pattern.test(usbDevices);
-        if (match) {
+        if (match && (process.env.NODE_ENV !== 'production' || process.env.DEBUG_SCANNER)) {
           console.log('Scanner gefunden mit Pattern:', pattern);
         }
         return match;
       });
       
-      console.log('Scanner erkannt:', hasScanner);
+      if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_SCANNER) {
+        console.log('Scanner erkannt:', hasScanner);
+      }
       
       if (hasScanner) {
         const deviceId = 'datalogic-touch65-1';
