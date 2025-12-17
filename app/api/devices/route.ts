@@ -10,14 +10,10 @@ export async function GET() {
     
     const devices = scannerManager.getDevices();
     
-    // Logging nur zur Laufzeit
-    const isBuild = process.env.NEXT_PHASE === 'phase-production-build' || 
-                    process.argv.includes('build');
-    if (!isBuild) {
-      console.log('API /devices aufgerufen, gefundene Geräte:', devices.length);
-      if (devices.length > 0) {
-        console.log('Geräte:', JSON.stringify(devices, null, 2));
-      }
+    // Logging zur Laufzeit (NEXT_PHASE ist nur während des Builds gesetzt)
+    console.log('API /devices aufgerufen, gefundene Geräte:', devices.length);
+    if (devices.length > 0) {
+      console.log('Geräte:', JSON.stringify(devices, null, 2));
     }
     
     return NextResponse.json({

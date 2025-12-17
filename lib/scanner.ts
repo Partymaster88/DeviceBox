@@ -25,11 +25,8 @@ export class ScannerManager extends EventEmitter {
   constructor() {
     super();
     // Starte Listener nur zur Laufzeit, nicht beim Build
-    // Prüfe ob wir in einem Build-Kontext sind
-    const isBuild = process.env.NEXT_PHASE === 'phase-production-build' || 
-                    process.argv.includes('build') ||
-                    (typeof process.env.npm_lifecycle_event !== 'undefined' && 
-                     process.env.npm_lifecycle_event === 'build');
+    // Prüfe ob wir in einem Build-Kontext sind (nur während next build)
+    const isBuild = process.env.NEXT_PHASE === 'phase-production-build';
     
     if (!isBuild) {
       console.log('ScannerManager initialisiert');
@@ -63,12 +60,9 @@ export class ScannerManager extends EventEmitter {
    * Erkennt angeschlossene Scanner-Geräte (private)
    */
   private detectDevicesPrivate(): void {
-    // Überspringe während des Builds - verhindert Timeout
-    const isBuild = process.env.NEXT_PHASE === 'phase-production-build' || 
-                    process.argv.includes('build') ||
-                    (typeof process.env.npm_lifecycle_event !== 'undefined' && 
-                     process.env.npm_lifecycle_event === 'build');
-    if (isBuild) {
+    // Überspringe nur während des Next.js Build-Prozesses
+    // NEXT_PHASE wird nur während des Builds gesetzt, nicht zur Laufzeit
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
       return;
     }
     
