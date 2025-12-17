@@ -16,11 +16,23 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [toggling, setToggling] = useState<string | null>(null)
 
+  const loadDevices = useCallback(async () => {
+    try {
+      const res = await fetch('/api/devices')
+      const data = await res.json()
+      setDevices(data.devices || [])
+    } catch (error) {
+      console.error('Fehler beim Laden der Geräte:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     loadDevices()
     const interval = setInterval(loadDevices, 2000)
     return () => clearInterval(interval)
-  }, [])
+  }, [loadDevices])
 
   // Barcode-Erfassung: Fange Tastatur-Events ab wenn Scanner aktiviert ist
   useEffect(() => {
@@ -74,18 +86,6 @@ export default function AdminPage() {
       if (barcodeTimeout) clearTimeout(barcodeTimeout)
     }
   }, [devices, loadDevices])
-
-  const loadDevices = useCallback(async () => {
-    try {
-      const res = await fetch('/api/devices')
-      const data = await res.json()
-      setDevices(data.devices || [])
-    } catch (error) {
-      console.error('Fehler beim Laden der Geräte:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
 
   const toggleDevice = async (deviceId: string, currentEnabled: boolean) => {
     if (toggling === deviceId) return // Verhindere mehrfache Klicks
